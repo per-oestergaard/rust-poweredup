@@ -1,0 +1,63 @@
+name: Mirror from Codeberg (into non-default branches)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mirror-from-codeberg
+  cancel-in-progress: true
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout rust-main (default branch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add upstream + fetch
+        run: |
+          git remote add codeberg https://codeberg.org/openbrickproject/node-poweredup.git 2>/dev/null || true
+          git fetch --prune --tags codeberg "+refs/heads/*:refs/remotes/codeberg/*"
+          git fetch origin --prune
+
+      - name: Delete branches removed upstream (keep rust-*)
+        run: |
+          upstream="$(git for-each-ref --format='%(refname:short)' refs/remotes/codeberg/ | sed 's#^codeberg/##' | sort)"
+          origin="$(git for-each-ref --format='%(refname:short)' refs/remotes/origin/ | sed 's#^origin/##' | sort)"
+
+          for b in ${origin}; do
+            [ "$b" = "HEAD" ] && continue
+            case "$b" in
+              rust-*) continue ;;
+            esac
+
+            if ! echo "${upstream}" | grep -qx "${b}"; then
+              echo "Deleting ${b} (removed upstream)"
+              git push origin --delete "${b}" || true
+            fi
+          done
+
+      - name: Force-update upstream branches on GitHub (do not touch rust-*)
+        run: |
+          for ref in $(git for-each-ref --format='%(refname:short)' refs/remotes/codeberg/); do
+            b="${ref#codeberg/}"
+
+            # never overwrite your own branches, including the default rust-main
+            case "$b" in
+              rust-*) echo "Skipping protected ${b}"; continue ;;
+            esac
+
+            echo "Pushing ${b}"
+            git push origin "refs/remotes/codeberg/${b}:refs/heads/${b}" --force
+          done
+
+      - name: Mirror tags
+        run: |
+          git push origin --tags --force
