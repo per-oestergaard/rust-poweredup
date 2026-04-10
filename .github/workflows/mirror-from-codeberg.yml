@@ -24,8 +24,7 @@ jobs:
       - name: Add upstream + fetch
         run: |
           git remote add codeberg https://codeberg.org/openbrickproject/node-poweredup.git 2>/dev/null || true
-          git fetch --prune --tags codeberg "+refs/heads/*:refs/remotes/codeberg/*"
-          git fetch origin --prune
+          git fetch --prune --tags codeberg "+refs/heads/*:refs/remotes/codeberg/*"          git fetch origin --prune
 
       - name: Delete branches removed upstream (keep rust-*)
         run: |

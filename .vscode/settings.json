@@ -3,6 +3,7 @@
     "/^cd /workspaces/rust-poweredup ; python3 \\.github/skills/pin-actions-to-sha/scripts/pin-actions\\.py$/": {
       "approve": true,
       "matchCommandLine": true
-    }
+    },
+    "cargo search": true
   }
 }
