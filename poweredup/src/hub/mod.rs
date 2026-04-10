@@ -132,31 +132,51 @@ impl<T: BleTransport> Hub<Disconnected, T> {
     /// Convenience constructor for a **LEGO Technic Medium Hub** (Control+, #88012).
     #[must_use]
     pub fn technic_medium_hub(transport: T) -> Self {
-        Self::new(transport, HubType::TechnicMediumHub, port_maps::technic_medium_hub())
+        Self::new(
+            transport,
+            HubType::TechnicMediumHub,
+            port_maps::technic_medium_hub(),
+        )
     }
 
     /// Convenience constructor for a **LEGO Technic Small Hub** (Spike Essential, #45345).
     #[must_use]
     pub fn technic_small_hub(transport: T) -> Self {
-        Self::new(transport, HubType::TechnicSmallHub, port_maps::technic_small_hub())
+        Self::new(
+            transport,
+            HubType::TechnicSmallHub,
+            port_maps::technic_small_hub(),
+        )
     }
 
     /// Convenience constructor for a **LEGO Powered UP Remote Control** (#88010).
     #[must_use]
     pub fn remote_control(transport: T) -> Self {
-        Self::new(transport, HubType::RemoteControl, port_maps::remote_control())
+        Self::new(
+            transport,
+            HubType::RemoteControl,
+            port_maps::remote_control(),
+        )
     }
 
     /// Convenience constructor for a **LEGO DUPLO Train Base** (#10874).
     #[must_use]
     pub fn duplo_train_base(transport: T) -> Self {
-        Self::new(transport, HubType::DuploTrainBase, port_maps::duplo_train_base())
+        Self::new(
+            transport,
+            HubType::DuploTrainBase,
+            port_maps::duplo_train_base(),
+        )
     }
 
     /// Convenience constructor for a **LEGO `WeDo 2.0` Smart Hub** (#45300).
     #[must_use]
     pub fn wedo2_smart_hub(transport: T) -> Self {
-        Self::new(transport, HubType::WeDo2SmartHub, port_maps::wedo2_smart_hub())
+        Self::new(
+            transport,
+            HubType::WeDo2SmartHub,
+            port_maps::wedo2_smart_hub(),
+        )
     }
 
     /// Opens the BLE connection and subscribes to the `LPF2_ALL` characteristic.
@@ -678,10 +698,9 @@ mod tests {
                     let h = Hub::wedo2_smart_hub(MockTransport::new());
                     (h.hub_type, h.port_map)
                 }
-                HubType::Unknown
-                | HubType::Mario
-                | HubType::Luigi
-                | HubType::Peach => unreachable!("not tested here"),
+                HubType::Unknown | HubType::Mario | HubType::Luigi | HubType::Peach => {
+                    unreachable!("not tested here")
+                }
             };
             assert_eq!(actual_type, *hub_type, "{label}: hub_type mismatch");
             assert_eq!(

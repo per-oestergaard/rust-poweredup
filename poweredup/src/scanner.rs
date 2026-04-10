@@ -137,7 +137,8 @@ mod tests {
 
     #[test]
     fn unknown_service_returns_none() {
-        let adv = AdvertisedHub::from_advertisement(&["00001800-0000-1000-8000-00805f9b34fb"], &mfr(65));
+        let adv =
+            AdvertisedHub::from_advertisement(&["00001800-0000-1000-8000-00805f9b34fb"], &mfr(65));
         assert!(adv.is_none());
     }
 
@@ -183,4 +184,3 @@ mod tests {
         assert_eq!(hub.port_id("A"), Some(1u8));
     }
 }
-

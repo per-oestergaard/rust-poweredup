@@ -63,3 +63,7 @@ When the `node-poweredup` submodule pointer is bumped (nightly PR from `main`):
 1. Diff the submodule: `git diff HEAD~1 HEAD -- node-poweredup`
 2. For each changed TS file use the `port-ts-to-rust` skill to update the Rust equivalent.
 3. Run `cargo test -p poweredup` from the repo root; fix until green.
+
+## Markdown
+
+Ensure tables' vertical bars are aligned, padded with spaces.

@@ -7,20 +7,11 @@ Port the TypeScript `node-poweredup` library to idiomatic Rust.
 - The `node-poweredup/` git submodule is **read-only reference material**.
 - All Rust code lives in `rust/poweredup/` (a library crate).
 - Upstream TS deltas arrive nightly via the submodule pointer CI action.
-- Each delta is reviewed and ported via a PR from `main` into `rust-main`.
+- Each delta is reviewed and ported via a PR into `main`.
 
 ## Core Rust idioms (non-negotiable)
 
-| Principle          | How applied                                                                                     |
-| ------------------ | ----------------------------------------------------------------------------------------------- |
-| Edition 2024       | `edition = "2024"` in every `Cargo.toml`                                                        |
-| Async              | `tokio` runtime throughout                                                                      |
-| Typestate          | `Hub<S: HubState>` — compiler-enforced connection lifecycle                                     |
-| RAII               | `Drop` on connected hubs sends HUB_ACTION Disconnect                                            |
-| Enums              | Every integer constant from TS becomes a `#[repr(u8)] enum` with `TryFrom<u8>`                  |
-| parse-not-validate | Raw `&[u8]` parsed into typed enums **at the BLE boundary** — never passed through logic layers |
-| Diagnostics        | `tracing` crate only — no `println!`, no `eprintln!`                                            |
-| Testing            | `cargo test` — never manual terminal commands                                                   |
+See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) — that file is the single authoritative source for all Rust conventions and is loaded automatically by Copilot on every interaction.
 
 ## Target architecture
 
@@ -217,7 +208,7 @@ Hardware tests are gated behind `#[cfg(feature = "hardware-tests")]` and never r
 
 ## PR delta workflow
 
-1. Nightly CI action bumps `node-poweredup` submodule pointer, opens PR `main` → `rust-main`.
+1. Nightly CI action bumps `node-poweredup` submodule pointer, opens PR into `main`.
 2. Reviewer runs: `git diff HEAD~1 HEAD -- node-poweredup` to see which TS files changed.
 3. For each changed TS file, invoke the `port-ts-to-rust` skill.
 4. PR merges when `cargo test -p poweredup` is green.
@@ -226,9 +217,131 @@ Hardware tests are gated behind `#[cfg(feature = "hardware-tests")]` and never r
 
 ## Skills and agents
 
-| File                                          | Purpose                                             |
-| --------------------------------------------- | --------------------------------------------------- |
-| `.github/copilot-instructions.md`             | Always-on Rust idiom rules for every AI interaction |
-| `.github/skills/port-ts-to-rust/SKILL.md`     | Repeatable skill: port one TS file → idiomatic Rust |
-| `.github/skills/scaffold-rust-crate/SKILL.md` | One-shot skill: bootstrap Phase 0 workspace/crate   |
-| `.github/agents/device-porter.agent.md`       | Focused agent for device-porting sessions           |
+| File                                          | Purpose                                                            |
+| --------------------------------------------- | ------------------------------------------------------------------ |
+| `.github/copilot-instructions.md`             | Always-on Rust idiom rules for every AI interaction                |
+| `.github/skills/port-ts-to-rust/SKILL.md`     | Repeatable skill: port one TS file → idiomatic Rust                |
+| `.github/skills/scaffold-rust-crate/SKILL.md` | One-shot skill: bootstrap Phase 0 workspace/crate                  |
+| `.github/skills/cargo-pin/SKILL.md`           | Pin all Cargo.toml deps to exact `=X.Y.Z` versions                 |
+| `.github/skills/pin-actions-to-sha/SKILL.md`  | Pin GitHub Actions `uses:` references to SHA hashes                |
+| `.github/skills/caveman/SKILL.md`             | Compress memory/instruction files to caveman format (token saving) |
+| `.github/agents/device-porter.agent.md`       | Focused agent for device-porting sessions                          |
+
+---
+
+## Example program plan — Battery Box Hub (28738)
+
+The **LEGO Powered UP Bluetooth Hub Battery Box** (set 28738 / item 88009) is the
+standard 2-port Powered UP Hub. It contains:
+
+- Port A & B — external motor/sensor ports
+- Port 50 — built-in RGB LED (`HubLed`)
+- Port 59 — current sensor
+- Port 60 — voltage sensor
+
+The example connects to this hub, blinks the LED through a colour sequence, then
+starts and stops motors attached to ports A and B.
+
+### Crate layout
+
+```
+/
+  examples/
+    battery_box/
+      Cargo.toml    (binary crate: name = "battery_box")
+      src/
+        main.rs
+```
+
+The examples workspace member is feature-gated on `hardware-tests` so it never
+pulls in `btleplug` (or compiles at all) during normal `cargo test` CI runs.
+
+### Implementation phases
+
+#### Step 1 — `btleplug` BLE transport (`poweredup/src/ble/btleplug.rs`)
+
+The example requires a real BLE transport. This file is currently a stub (the
+`hardware-tests` feature gate references it but it does not yet exist). Implement:
+
+- `BtleplugTransport` struct wrapping a `btleplug::platform::Peripheral`
+- `BleTransport` impl: `connect`, `disconnect`, `write`, `subscribe`
+- Keep all `btleplug` imports behind `#[cfg(feature = "hardware-tests")]`
+
+#### Step 2 — `btleplug` scanner (`poweredup/src/ble/btleplug.rs` or `scanner.rs`)
+
+Implement `BtleplugScanner::scan() -> impl Stream<Item = AdvertisedHub<BtleplugTransport>>`:
+
+- Use `btleplug::api::Manager::adapters()` → take first adapter
+- `adapter.start_scan(ScanFilter { services: [LPF2_SERVICE_UUID] })`
+- For each discovered peripheral: read service UUIDs + manufacturer data, call
+  `AdvertisedHub::from_advertisement(…)`, yield result
+- Stop after the first Powered UP Hub is found (for the example)
+
+#### Step 3 — Example binary (`examples/battery_box/src/main.rs`)
+
+```
+cargo run --example battery_box --features hardware-tests
+```
+
+Sequence:
+
+1. **Scan** — start BLE scan, wait for the first `HubType::Hub` advertisement
+2. **Connect** — `hub.connect().await`
+3. **Initialize** — `hub.initialize().await` (reads firmware, battery, RSSI)
+4. **Print info** — log hub name, firmware version, battery level
+5. **Blink LED** — cycle through Red → Green → Blue → White → Off (500 ms each)
+   using `HubLed::encode_set_color` + `Hub::write(LpfMessage::PortOutputCommand(…))`
+6. **Start motors** — send `BasicMotorDevice::encode_set_power(75)` on ports A and B
+7. **Wait 2 s**
+8. **Stop motors** — send `encode_stop()` on both ports
+9. **Disconnect** — `hub.disconnect().await`
+
+#### Step 4 — Workspace wiring
+
+- Add `examples/battery_box` as a workspace member in the root `Cargo.toml`
+- Gate it: `[workspace] members = [..., "examples/battery_box"]` with a note that
+  it requires `--features poweredup/hardware-tests` to build
+- Add `tracing-subscriber` as a dev/example dependency for log output
+
+### How to test (hardware required)
+
+**Prerequisites:**
+
+- A Linux machine or Raspberry Pi with a Bluetooth 4.0+ adapter
+- The LEGO Powered UP Hub Battery Box (28738) with fresh batteries, power ON
+- Rust toolchain installed (`rustup`)
+- Two LEGO motors connected to ports A and B (optional — the program handles
+  missing devices gracefully)
+
+**Steps:**
+
+```bash
+# 1. Clone and enter the repo
+git clone --recurse-submodules https://github.com/per-oestergaard/rust-poweredup
+cd rust-poweredup
+
+# 2. Build the example (requires btleplug → Linux BLE stack)
+cargo build --example battery_box --features poweredup/hardware-tests
+
+# 3. Turn on the hub (press the green button — LED flashes white)
+
+# 4. Run (may need sudo on some Linux distros for BLE access)
+cargo run --example battery_box --features poweredup/hardware-tests
+
+# 5. Expected output
+# INFO scanning for Powered UP Hub...
+# INFO hub found: "Handset" firmware=1.0.00.0000 battery=87%
+# INFO blinking LED...
+# INFO starting motors on ports A and B...
+# INFO stopping motors
+# INFO disconnected
+```
+
+**Troubleshooting:**
+
+| Symptom                           | Fix                                                                                 |
+| --------------------------------- | ----------------------------------------------------------------------------------- |
+| `No Bluetooth adapter found`      | Ensure `bluetoothd` is running: `sudo systemctl start bluetooth`                    |
+| `Permission denied (os error 13)` | Run with `sudo`, or add your user to the `bluetooth` group                          |
+| Hub not found after 30 s          | Hub may have gone to sleep — press button to wake; ensure no other app is connected |
+| Motors don't move                 | Check motors are seated fully; hub port LEDs should light when connected            |
