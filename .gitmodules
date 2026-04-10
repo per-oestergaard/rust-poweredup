@@ -1,0 +1,3 @@
+[submodule "node-poweredup"]
+	path = node-poweredup
+	url = https://codeberg.org/openbrickproject/node-poweredup.git
