@@ -1,0 +1,11 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "python3 .github/hooks/scripts/pin-actions-on-save.py",
+        "timeout": 30
+      }
+    ]
+  }
+}

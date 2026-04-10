@@ -11,10 +11,13 @@ version references (e.g. `actions/checkout@v4`, `actions/checkout@main`) with
 their exact commit SHA, keeping the original tag as a comment.
 
 **Before:**
+
 ```yaml
 uses: actions/checkout@v4
 ```
+
 **After:**
+
 ```yaml
 uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 ```
