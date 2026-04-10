@@ -1,0 +1,282 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>node-poweredup</title><meta name="description" content="Documentation for node-poweredup"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">node-poweredup</a><div id="tsd-toolbar-links"><a href="https://github.com/nathankellenicki/node-poweredup">GitHub</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>node-poweredup</h1></div><div class="tsd-panel tsd-typography"><p><a href="https://drone.kellenicki.com/nkellenicki/node-poweredup"><img src="https://drone.kellenicki.com/api/badges/nkellenicki/node-poweredup/status.svg" alt="Drone"></a>
+<a href="https://www.npmjs.com/package/node-poweredup"><img src="https://img.shields.io/npm/v/node-poweredup.svg?style=flat" alt="NPM Version"></a>
+<a href="https://nathan.kellenicki.com/node-poweredup/"><img src="https://img.shields.io/badge/docs-start%20here-yellowgreen.svg" alt="Docs"></a></p>
+<h1 id="node-poweredup-a-javascript-module-to-interface-with-lego-powered-up-components" class="tsd-anchor-link"><strong>node-poweredup</strong> - A Javascript module to interface with LEGO Powered Up components.<a href="#node-poweredup-a-javascript-module-to-interface-with-lego-powered-up-components" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><h3 id="announcements" class="tsd-anchor-link">Announcements<a href="#announcements" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li>v10.0.0 brings node-poweredup up to date! Libraries updated, new ES style syntax, and more.</li>
+</ul>
+<h3 id="introduction" class="tsd-anchor-link">Introduction<a href="#introduction" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>LEGO Powered Up is the successor to Power Functions, the system for adding electronics to LEGO models. Powered Up is a collection of ranges, all of which are compatible with each other:</p>
+<ul>
+<li>LEGO Education WeDo 2.0</li>
+<li>LEGO Boost</li>
+<li>LEGO Powered Up</li>
+<li>LEGO Technic CONTROL+</li>
+<li>LEGO Education SPIKE Prime</li>
+<li>LEGO Education SPIKE Essential</li>
+<li>LEGO Mindstorms Robot Inventor</li>
+</ul>
+<p>Other products that speak the Powered Up protocol include the Duplo App-Controlled trains and LEGO Super Mario, both of which are compatible with this library.</p>
+<p>This library allows communication and control of Powered Up devices and peripherals via Javascript, both from Node.js and from the browser using Web Bluetooth.</p>
+<h3 id="sample-usage" class="tsd-anchor-link">Sample Usage<a href="#sample-usage" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><pre><code class="javascript"><span class="hl-0">import</span><span class="hl-1"> { </span><span class="hl-2">PoweredUP</span><span class="hl-1"> } </span><span class="hl-0">from</span><span class="hl-1"> </span><span class="hl-3">&quot;node-poweredup&quot;</span><span class="hl-1">;</span><br/><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-5">poweredUP</span><span class="hl-1"> = </span><span class="hl-4">new</span><span class="hl-1"> </span><span class="hl-6">PoweredUP</span><span class="hl-1">();</span><br/><br/><span class="hl-2">poweredUP</span><span class="hl-1">.</span><span class="hl-6">on</span><span class="hl-1">(</span><span class="hl-3">&quot;discover&quot;</span><span class="hl-1">, </span><span class="hl-4">async</span><span class="hl-1"> (</span><span class="hl-2">hub</span><span class="hl-1">) </span><span class="hl-4">=&gt;</span><span class="hl-1"> { </span><span class="hl-7">// Wait to discover a Hub</span><br/><span class="hl-1">    </span><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-6">log</span><span class="hl-1">(</span><span class="hl-3">`Discovered </span><span class="hl-4">${</span><span class="hl-2">hub</span><span class="hl-8">.</span><span class="hl-2">name</span><span class="hl-4">}</span><span class="hl-3">!`</span><span class="hl-1">);</span><br/><span class="hl-1">    </span><span class="hl-0">await</span><span class="hl-1"> </span><span class="hl-2">hub</span><span class="hl-1">.</span><span class="hl-6">connect</span><span class="hl-1">(); </span><span class="hl-7">// Connect to the Hub</span><br/><span class="hl-1">    </span><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-5">motorA</span><span class="hl-1"> = </span><span class="hl-0">await</span><span class="hl-1"> </span><span class="hl-2">hub</span><span class="hl-1">.</span><span class="hl-6">waitForDeviceAtPort</span><span class="hl-1">(</span><span class="hl-3">&quot;A&quot;</span><span class="hl-1">); </span><span class="hl-7">// Make sure a motor is plugged into port A</span><br/><span class="hl-1">    </span><span class="hl-4">const</span><span class="hl-1"> </span><span class="hl-5">motorB</span><span class="hl-1"> = </span><span class="hl-0">await</span><span class="hl-1"> </span><span class="hl-2">hub</span><span class="hl-1">.</span><span class="hl-6">waitForDeviceAtPort</span><span class="hl-1">(</span><span class="hl-3">&quot;B&quot;</span><span class="hl-1">); </span><span class="hl-7">// Make sure a motor is plugged into port B</span><br/><span class="hl-1">    </span><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-6">log</span><span class="hl-1">(</span><span class="hl-3">&quot;Connected&quot;</span><span class="hl-1">);</span><br/><br/><span class="hl-1">    </span><span class="hl-0">while</span><span class="hl-1"> (</span><span class="hl-4">true</span><span class="hl-1">) { </span><span class="hl-7">// Repeat indefinitely</span><br/><span class="hl-1">        </span><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-6">log</span><span class="hl-1">(</span><span class="hl-3">&quot;Running motor B at speed 50&quot;</span><span class="hl-1">);</span><br/><span class="hl-1">        </span><span class="hl-2">motorB</span><span class="hl-1">.</span><span class="hl-6">setPower</span><span class="hl-1">(</span><span class="hl-9">50</span><span class="hl-1">); </span><span class="hl-7">// Start a motor attached to port B to run a 3/4 speed (75) indefinitely</span><br/><span class="hl-1">        </span><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-6">log</span><span class="hl-1">(</span><span class="hl-3">&quot;Running motor A at speed 100 for 2 seconds&quot;</span><span class="hl-1">);</span><br/><span class="hl-1">        </span><span class="hl-2">motorA</span><span class="hl-1">.</span><span class="hl-6">setPower</span><span class="hl-1">(</span><span class="hl-9">100</span><span class="hl-1">); </span><span class="hl-7">// Run a motor attached to port A for 2 seconds at maximum speed (100) then stop</span><br/><span class="hl-1">        </span><span class="hl-0">await</span><span class="hl-1"> </span><span class="hl-2">hub</span><span class="hl-1">.</span><span class="hl-6">sleep</span><span class="hl-1">(</span><span class="hl-9">2000</span><span class="hl-1">);</span><br/><span class="hl-1">        </span><span class="hl-2">motorA</span><span class="hl-1">.</span><span class="hl-6">brake</span><span class="hl-1">();</span><br/><span class="hl-1">        </span><span class="hl-0">await</span><span class="hl-1"> </span><span class="hl-2">hub</span><span class="hl-1">.</span><span class="hl-6">sleep</span><span class="hl-1">(</span><span class="hl-9">1000</span><span class="hl-1">); </span><span class="hl-7">// Do nothing for 1 second</span><br/><span class="hl-1">        </span><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-6">log</span><span class="hl-1">(</span><span class="hl-3">&quot;Running motor A at speed -30 for 1 second&quot;</span><span class="hl-1">);</span><br/><span class="hl-1">        </span><span class="hl-2">motorA</span><span class="hl-1">.</span><span class="hl-6">setPower</span><span class="hl-1">(-</span><span class="hl-9">30</span><span class="hl-1">); </span><span class="hl-7">// Run a motor attached to port A for 2 seconds at 1/2 speed in reverse (-50) then stop</span><br/><span class="hl-1">        </span><span class="hl-0">await</span><span class="hl-1"> </span><span class="hl-2">hub</span><span class="hl-1">.</span><span class="hl-6">sleep</span><span class="hl-1">(</span><span class="hl-9">2000</span><span class="hl-1">);</span><br/><span class="hl-1">        </span><span class="hl-2">motorA</span><span class="hl-1">.</span><span class="hl-6">brake</span><span class="hl-1">();</span><br/><span class="hl-1">        </span><span class="hl-0">await</span><span class="hl-1"> </span><span class="hl-2">hub</span><span class="hl-1">.</span><span class="hl-6">sleep</span><span class="hl-1">(</span><span class="hl-9">1000</span><span class="hl-1">); </span><span class="hl-7">// Do nothing for 1 second</span><br/><span class="hl-1">    }</span><br/><span class="hl-1">});</span><br/><br/><span class="hl-2">poweredUP</span><span class="hl-1">.</span><span class="hl-6">scan</span><span class="hl-1">(); </span><span class="hl-7">// Start scanning for Hubs</span><br/><span class="hl-2">console</span><span class="hl-1">.</span><span class="hl-6">log</span><span class="hl-1">(</span><span class="hl-3">&quot;Scanning for Hubs...&quot;</span><span class="hl-1">);</span>
+</code><button type="button">Copy</button></pre>
+
+<p>More examples are available in the &quot;examples&quot; directory.</p>
+<h3 id="documentation" class="tsd-anchor-link">Documentation<a href="#documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p><a href="https://nathankellenicki.github.io/node-poweredup/">Full documentation is available here.</a></p>
+<h3 id="nodejs-installation" class="tsd-anchor-link">Node.js Installation<a href="#nodejs-installation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Node.js v18.0+ required.</p>
+<pre><code class="javascript"><span class="hl-2">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">node</span><span class="hl-1">-</span><span class="hl-2">poweredup</span><span class="hl-1"> --</span><span class="hl-2">save</span>
+</code><button type="button">Copy</button></pre>
+
+<p><code>node-poweredup</code> relies on the <code>@stoprocent/noble</code> library. Ensure any prerequisites <a href="https://github.com/stoprocent/noble?tab=readme-ov-file#prerequisites">documented here</a> are satisfied.</p>
+<h3 id="compatibility" class="tsd-anchor-link">Compatibility<a href="#compatibility" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>While most Powered Up components and Hubs are compatible with each other, there are exceptions. For example, there is limited backwards compatibility between newer components and the WeDo 2.0 Smart Hub. However WeDo 2.0 components are fully forwards compatible with newer Hubs.</p>
+<table>
+<thead>
+<tr>
+<th>Device Name</th>
+<th>Product Code</th>
+<th>Type</th>
+<th>WeDo 2.0 Smart Hub</th>
+<th>Boost Move Hub</th>
+<th>Powered Up Hub</th>
+<th>Control+ Hub</th>
+<th>Availability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WeDo 2.0 Tilt Sensor</td>
+<td><a href="https://brickset.com/sets/45305-1/">45305</a></td>
+<td>Sensor</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45300-1/">45300</a></td>
+</tr>
+<tr>
+<td>WeDo 2.0 Motion Sensor</td>
+<td><a href="https://brickset.com/sets/45304-1/">45304</a></td>
+<td>Sensor</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45300-1/">45300</a></td>
+</tr>
+<tr>
+<td>WeDo 2.0 Medium Motor</td>
+<td><a href="https://brickset.com/sets/45303-1/">45303</a></td>
+<td>Motor</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45300-1/">45300</a><br /> <a href="https://brickset.com/sets/76112-1/">76112</a></td>
+</tr>
+<tr>
+<td>Boost Color and Distance Sensor</td>
+<td><a href="https://brickset.com/sets/88007-1/">88007</a></td>
+<td>Sensor</td>
+<td><em>Partial</em></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/17101-1/">17101</a></td>
+</tr>
+<tr>
+<td>Boost Tacho Motor</td>
+<td><a href="https://brickset.com/sets/88008-1/">88008</a></td>
+<td>Motor/Sensor</td>
+<td><em>Partial</em></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/17101-1/">17101</a></td>
+</tr>
+<tr>
+<td>Powered Up Train Motor</td>
+<td><a href="https://brickset.com/sets/88011-1/">88011</a></td>
+<td>Motor</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/60197-1/">60197</a><br /><a href="https://brickset.com/sets/60198-1/">60198</a></td>
+</tr>
+<tr>
+<td>Powered Up LED Lights</td>
+<td><a href="https://brickset.com/sets/88005-1/">88005</a></td>
+<td>Light</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/88005-1/">88005</a></td>
+</tr>
+<tr>
+<td>Control+ Large Motor</td>
+<td>22169</td>
+<td>Motor/Sensor</td>
+<td><em>Partial</em></td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/42099-1/">42099</a><br /><a href="https://brickset.com/sets/42100-1/">42100</a></td>
+</tr>
+<tr>
+<td>Control+ XLarge Motor</td>
+<td>22172</td>
+<td>Motor/Sensor</td>
+<td><em>Partial</em></td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/42099-1/">42099</a><br /><a href="https://brickset.com/sets/42100-1/">42100</a></td>
+</tr>
+<tr>
+<td>SPIKE Prime Medium Motor</td>
+<td>45678</td>
+<td>Motor/Sensor</td>
+<td><em>Partial</em></td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45678-1/">45678</a></td>
+</tr>
+<tr>
+<td>SPIKE Prime Large Motor</td>
+<td>45678</td>
+<td>Motor/Sensor</td>
+<td><em>Partial</em></td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45678-1/">45678</a></td>
+</tr>
+<tr>
+<td>SPIKE Prime Color Sensor</td>
+<td>45678</td>
+<td>Sensor</td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45678-1/">45678</a></td>
+</tr>
+<tr>
+<td>SPIKE Prime Distance Sensor</td>
+<td>45678</td>
+<td>Sensor</td>
+<td>No</td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45678-1/">45678</a></td>
+</tr>
+<tr>
+<td>SPIKE Prime Force Sensor</td>
+<td>45678</td>
+<td>Sensor</td>
+<td><em>Partial</em></td>
+<td>Yes</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45678-1/">45678</a></td>
+</tr>
+<tr>
+<td>SPIKE Essential Small Motor</td>
+<td>45607</td>
+<td>Motor/Sensor</td>
+<td><em>Partial</em></td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45345-1/">45345</a></td>
+</tr>
+<tr>
+<td>SPIKE Essential 3x3 Color Matrix</td>
+<td>45608</td>
+<td>Motor/Sensor</td>
+<td><em>Partial</em></td>
+<td>No</td>
+<td>Yes</td>
+<td>Yes</td>
+<td><a href="https://brickset.com/sets/45345-1/">45345</a></td>
+</tr>
+</tbody>
+</table>
+<p>In addition, the Hubs themselves have certain built-in features which this library exposes.</p>
+<table>
+<thead>
+<tr>
+<th>Hub Name</th>
+<th>Product Code</th>
+<th>Built-In Features</th>
+<th>Availability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WeDo 2.0 Smart hub</td>
+<td><a href="https://brickset.com/sets/45301-1/">45301</a></td>
+<td>RGB LED<br />Piezo Buzzer<br />Button</td>
+<td><a href="https://brickset.com/sets/45300-1/">45300</a></td>
+</tr>
+<tr>
+<td>Boost Move Hub</td>
+<td><a href="https://brickset.com/sets/88006-1/">88006</a></td>
+<td>RGB LED<br />Tilt Sensor<br />2x Tacho Motors<br />Button</td>
+<td><a href="https://brickset.com/sets/17101-1/">17101</a></td>
+</tr>
+<tr>
+<td>Powered Up Hub</td>
+<td><a href="https://brickset.com/sets/88009-1/">88009</a></td>
+<td>RGB LED<br />Button</td>
+<td><a href="https://brickset.com/sets/60197-1/">60197</a><br /><a href="https://brickset.com/sets/60198-1/">60198</a><br /><a href="https://brickset.com/sets/76112-1/">76112</a></td>
+</tr>
+<tr>
+<td>Powered Up Remote</td>
+<td><a href="https://brickset.com/sets/88010-1/">88010</a></td>
+<td>RGB LED<br />Left and Right Control Buttons<br />Button</td>
+<td><a href="https://brickset.com/sets/60197-1/">60197</a><br /><a href="https://brickset.com/sets/60198-1/">60198</a></td>
+</tr>
+<tr>
+<td>Duplo Train Base</td>
+<td>28743</td>
+<td>RGB LED/Headlights<br />Speaker<br />Speedometer<br />Motor<br />Color and Distance Sensor<br />Button</td>
+<td><a href="https://brickset.com/sets/10874-1/">10874</a><br /><a href="https://brickset.com/sets/10875-1/">10875</a></td>
+</tr>
+<tr>
+<td>Control+ Hub</td>
+<td>22127</td>
+<td>RGB LED<br />Button<br />Tilt Sensor<br />Accelerometer</td>
+<td><a href="https://brickset.com/sets/42099-1/">42099</a><br /><a href="https://brickset.com/sets/42100-1/">42100</a></td>
+</tr>
+<tr>
+<td>Super Mario</td>
+<td>71360</td>
+<td>Pants Sensor<br />Barcode and Color Sensor</td>
+<td><a href="https://brickset.com/sets/71360-1/">71360</a></td>
+</tr>
+<tr>
+<td>SPIKE Essential Hub</td>
+<td>45609</td>
+<td>RGB LED<br />Button<br />Tilt Sensor<br />Accelerometer</td>
+<td><a href="https://brickset.com/sets/45345-1/">45345</a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="known-issues-and-limitations" class="tsd-anchor-link">Known Issues and Limitations<a href="#known-issues-and-limitations" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li>
+<p>The WeDo 2.0 Smart Hub uses an older firmware which is no longer being updated. As a result, only certain motors and sensors work with it. See the table above.</p>
+</li>
+<li>
+<p>When used with the Boost Move Hub, the Control+ Motors and SPIKE Prime Motors/Sensors do not currently accept commands (This is a known bug which requires a firmware update from Lego to fix)</p>
+</li>
+<li>
+<p>The SPIKE Prime Hub does not use Bluetooth Low Energy, so is not supported via this library. It is recommended you use MicroPython to develop for this Hub using the officially provided tools and software. The SPIKE Essential Hub however is supported, as it uses Bluetooth Low Energy.</p>
+</li>
+<li>
+<p>On most Unix systems, you need root permissions to access Bluetooth devices. You may want to <a href="https://github.com/stoprocent/noble?tab=readme-ov-file#running-without-rootsudo-linux-specific">grant the node executable access to the Bluetooth adapter</a></p>
+</li>
+</ul>
+<h3 id="credits" class="tsd-anchor-link">Credits<a href="#credits" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><p>Thanks go to Jorge Pereira (<a href="https://github.com/JorgePe">@JorgePe</a>), Sebastian Raff (<a href="https://github.com/hobbyquaker">@hobbyquaker</a>), Valentin Heun (<a href="https://github.com/vheun">@vheun</a>), Johan Korten (<a href="https://github.com/jakorten">@jakorten</a>), and Andrey Pokhilko (<a href="https://github.com/undera">@undera</a>) for their various works, contributions, and assistance on figuring out the LEGO Boost, WeDo 2.0, and Powered Up protocols.</p>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#node-poweredup-a-javascript-module-to-interface-with-lego-powered-up-components"><span>node-<wbr/>poweredup -<wbr/> <wbr/>A <wbr/>Javascript module to interface with <wbr/>LEGO <wbr/>Powered <wbr/>Up components.</span></a><ul><li><a href="#announcements"><span>Announcements</span></a></li><li><a href="#introduction"><span>Introduction</span></a></li><li><a href="#sample-usage"><span>Sample <wbr/>Usage</span></a></li><li><a href="#documentation"><span>Documentation</span></a></li><li><a href="#nodejs-installation"><span>Node.js <wbr/>Installation</span></a></li><li><a href="#compatibility"><span>Compatibility</span></a></li><li><a href="#known-issues-and-limitations"><span>Known <wbr/>Issues and <wbr/>Limitations</span></a></li><li><a href="#credits"><span>Credits</span></a></li></ul></div></details></div><div class="site-menu"><nav id="tsd-sidebar-links" class="tsd-navigation"><a href="https://github.com/nathankellenicki/node-poweredup" class="tsd-nav-link">GitHub</a></nav><nav class="tsd-navigation"><a href="modules.html">node-poweredup</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer><p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer><div class="overlay"></div></body></html>
