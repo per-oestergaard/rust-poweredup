@@ -5,7 +5,7 @@
 //! Hub<Disconnected> --connect()--> Hub<Connected> --initialize()--> Hub<Ready>
 //! ```
 //!
-//! RAII: `Drop` on `Hub<Connected>` and `Hub<Ready>` sends a HUB_ACTION
+//! RAII: `Drop` on `Hub<Connected>` and `Hub<Ready>` sends a `HUB_ACTION`
 //! Disconnect message so the physical hub knows the host has gone away.
 
 use std::collections::{HashMap, HashSet};
@@ -52,6 +52,7 @@ pub struct Ready {
 // ── Hub<S> ────────────────────────────────────────────────────────────────────
 
 /// A LEGO hub in state `S`.
+#[allow(clippy::struct_field_names)] // `hub_type` is the clearest name here
 pub struct Hub<S, T: BleTransport> {
     transport: T,
     hub_type: HubType,
@@ -78,6 +79,9 @@ pub struct HubProperties {
 
 impl<T: BleTransport> Hub<Disconnected, T> {
     /// Create a new hub bound to a transport.
+    ///
+    /// # Panics
+    /// Panics if the `LPF2_ALL` BLE UUID constant is malformed (never in practice).
     #[must_use]
     pub fn new(transport: T, hub_type: HubType, port_map: HashMap<String, u8>) -> Self {
         let lpf2_char = Uuid::parse_str(ble_uuid::LPF2_ALL).expect("valid UUID constant");
@@ -91,7 +95,7 @@ impl<T: BleTransport> Hub<Disconnected, T> {
         }
     }
 
-    /// Opens the BLE connection and subscribes to the LPF2_ALL characteristic.
+    /// Opens the BLE connection and subscribes to the `LPF2_ALL` characteristic.
     ///
     /// # Errors
     /// Propagates any transport-level errors.
@@ -121,8 +125,8 @@ impl<T: BleTransport> Hub<Connected, T> {
     /// `Hub<Ready>`.
     ///
     /// Mirrors `LPF2Hub.connect()` in the TS source:
-    /// - Enables BUTTON_STATE and RSSI and BATTERY_VOLTAGE update reports
-    /// - Requests FW_VERSION, HW_VERSION, and PRIMARY_MAC_ADDRESS once
+    /// - Enables `BUTTON_STATE` and RSSI and `BATTERY_VOLTAGE` update reports
+    /// - Requests `FW_VERSION`, `HW_VERSION`, and `PRIMARY_MAC_ADDRESS` once
     ///
     /// # Errors
     /// Returns an error if any write or property read fails.
@@ -236,7 +240,7 @@ impl<T: BleTransport> Hub<Connected, T> {
                 self.props.hardware_version = Some(Version::from_le_i32(raw));
             }
             HubPropertyReference::Rssi => {
-                self.props.rssi = Some(p.first().copied().unwrap_or(0) as i8);
+                self.props.rssi = Some(p.first().copied().unwrap_or(0).cast_signed());
             }
             HubPropertyReference::BatteryVoltage => {
                 self.props.battery_level = p.first().copied();
@@ -339,13 +343,26 @@ impl<T: BleTransport> Hub<Ready, T> {
                     dev.set_mode(m.mode);
                 }
             }
-            LpfMessage::PortValueSingle(v) => {
+                LpfMessage::PortValueSingle(v) => {
                 if let Some(dev) = self.state.devices.get_mut(&v.port_id) {
                     match dev.receive(&v.data) {
-                        Ok(Some(Event::MotorRotate { .. }))
-                        | Ok(Some(Event::MotorAngle { .. }))
-                        | Ok(Some(Event::Raw { .. }))
-                        | Ok(None) => {}
+                        Ok(
+                            Some(
+                                Event::MotorRotate { .. }
+                                | Event::MotorAngle { .. }
+                                | Event::Color { .. }
+                                | Event::Distance { .. }
+                                | Event::ColorAndDistance { .. }
+                                | Event::Reflect { .. }
+                                | Event::Ambient { .. }
+                                | Event::Tilt { .. }
+                                | Event::Voltage { .. }
+                                | Event::Current { .. }
+                                | Event::RemoteButton { .. }
+                                | Event::Raw { .. },
+                            )
+                            | None,
+                        ) => {}
                         Err(e) => warn!("device receive error on port {}: {}", v.port_id, e),
                     }
                 }
@@ -361,7 +378,7 @@ impl<T: BleTransport> Hub<Ready, T> {
                 self.props.battery_level = p.first().copied();
             }
             HubPropertyReference::Rssi => {
-                self.props.rssi = Some(p.first().copied().unwrap_or(0) as i8);
+                self.props.rssi = Some(p.first().copied().unwrap_or(0).cast_signed());
             }
             HubPropertyReference::Button => {
                 self.props.button_pressed = p.first().copied().unwrap_or(0) != 0;
@@ -371,12 +388,18 @@ impl<T: BleTransport> Hub<Ready, T> {
     }
 
     /// Send a raw LPF2 message to the hub.
+    ///
+    /// # Errors
+    /// Propagates transport write errors.
     pub async fn write(&self, msg: LpfMessage) -> Result<()> {
         let bytes = message::encode(&msg);
         self.transport.write(self.lpf2_char, bytes).await
     }
 
-    /// Disconnect cleanly — sends HUB_ACTION Disconnect then closes BLE.
+    /// Disconnect cleanly — sends `HUB_ACTION` Disconnect then closes BLE.
+    ///
+    /// # Errors
+    /// Returns an error if the BLE disconnect fails.
     pub async fn disconnect(mut self) -> Result<()> {
         let _ = self
             .write(LpfMessage::HubAction(ActionType::Disconnect))

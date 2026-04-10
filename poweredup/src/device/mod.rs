@@ -8,6 +8,7 @@ use bytes::Bytes;
 
 use crate::{error::Result, protocol::consts::DeviceType};
 
+pub mod light;
 pub mod motor;
 pub mod sensor;
 
@@ -20,6 +21,28 @@ pub enum Event {
     MotorRotate { port_id: u8, degrees: i32 },
     /// Absolute motor position in degrees.
     MotorAngle { port_id: u8, angle: i16 },
+    /// Detected color.
+    Color { port_id: u8, color: crate::protocol::consts::Color },
+    /// Distance measurement in millimetres.
+    Distance { port_id: u8, distance_mm: u32 },
+    /// Combined color + distance.
+    ColorAndDistance {
+        port_id: u8,
+        color: crate::protocol::consts::Color,
+        distance_mm: u32,
+    },
+    /// Reflectivity percentage (0–100).
+    Reflect { port_id: u8, percent: u8 },
+    /// Ambient light percentage (0–100).
+    Ambient { port_id: u8, percent: u8 },
+    /// 2-axis (or 3-axis) tilt in degrees.
+    Tilt { port_id: u8, x: i8, y: i8, z: Option<i8> },
+    /// Hub voltage in millivolts.
+    Voltage { port_id: u8, millivolts: u32 },
+    /// Hub current in milliamps.
+    Current { port_id: u8, milliamps: u32 },
+    /// Remote-control button raw state byte.
+    RemoteButton { port_id: u8, state: u8 },
     /// Raw passthrough for not-yet-decoded device types.
     Raw { port_id: u8, mode: u8, data: Bytes },
 }
@@ -43,6 +66,9 @@ pub trait Device: Send + 'static {
     ///
     /// Returns `Some(event)` when the payload produces a meaningful typed event,
     /// `None` when it is silently consumed.
+    ///
+    /// # Errors
+    /// Returns an error if the raw payload cannot be decoded into a typed value.
     fn receive(&mut self, data: &[u8]) -> Result<Option<Event>>;
 }
 
@@ -56,8 +82,17 @@ pub struct DeviceFactory;
 impl DeviceFactory {
     #[must_use]
     pub fn create(device_type_id: u16, port_id: u8) -> Box<dyn Device> {
+        use light::{ColorLightMatrix, HubLed, Light, PiezoBuzzer};
         use motor::{AbsoluteMotorDevice, BasicMotorDevice, TachoMotorDevice};
-        match DeviceType::try_from(device_type_id as u8) {
+        // device_type_id > 255 maps to no known DeviceType; handle gracefully
+        let Ok(u8_id) = u8::try_from(device_type_id) else {
+            return Box::new(GenericDevice {
+                device_type_id,
+                port_id,
+                mode: 0,
+            });
+        };
+        match DeviceType::try_from(u8_id) {
             // ── Basic motors (power only) ─────────────────────────────────────
             Ok(
                 DeviceType::SimpleMediumLinearMotor
@@ -79,6 +114,26 @@ impl DeviceFactory {
                 | DeviceType::TechnicMediumAngularMotorGrey
                 | DeviceType::TechnicLargeAngularMotorGrey,
             ) => Box::new(AbsoluteMotorDevice::new(port_id, device_type_id)),
+            // ── Sensors ────────────────────────────────────────────────────────
+            Ok(DeviceType::ColorDistanceSensor) => {
+                Box::new(sensor::ColorDistanceSensor::new(port_id))
+            }
+            Ok(DeviceType::MotionSensor) => Box::new(sensor::MotionSensor::new(port_id)),
+            Ok(DeviceType::TiltSensor | DeviceType::MoveHubTiltSensor) => {
+                Box::new(sensor::TiltSensor::new(port_id))
+            }
+            Ok(DeviceType::VoltageSensor) => Box::new(sensor::VoltageSensor::new(port_id)),
+            Ok(DeviceType::CurrentSensor) => Box::new(sensor::CurrentSensor::new(port_id)),
+            Ok(DeviceType::RemoteControlButton) => {
+                Box::new(sensor::RemoteControlButton::new(port_id))
+            }
+            // ── Lights and audio ──────────────────────────────────────────────
+            Ok(DeviceType::HubLed) => Box::new(HubLed::new(port_id)),
+            Ok(DeviceType::Light) => Box::new(Light::new(port_id)),
+            Ok(DeviceType::PiezoBuzzer) => Box::new(PiezoBuzzer::new(port_id)),
+            Ok(DeviceType::Technic3x3ColorLightMatrix) => {
+                Box::new(ColorLightMatrix::new(port_id))
+            }
             _ => Box::new(GenericDevice {
                 device_type_id,
                 port_id,

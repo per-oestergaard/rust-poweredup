@@ -108,9 +108,10 @@ pub struct Version {
 
 impl Version {
     /// Decode from a little-endian i32 on the wire.
+    #[must_use]
     pub fn from_le_i32(raw: i32) -> Self {
         // decodeVersion pads to 8 hex digits, splits as [0],[1],[2..4],[4..]
-        let hex = format!("{:08x}", raw as u32);
+        let hex = format!("{:08x}", raw.cast_unsigned());
         let major = u8::from_str_radix(&hex[0..1], 16).unwrap_or(0);
         let minor = u8::from_str_radix(&hex[1..2], 16).unwrap_or(0);
         let patch = u8::from_str_radix(&hex[2..4], 16).unwrap_or(0);
@@ -267,6 +268,7 @@ pub fn parse(buf: &[u8]) -> Result<LpfMessage> {
 ///
 /// Prepends the two-byte header `[total_len, 0x00]` as required by LPF2.
 #[must_use]
+#[allow(clippy::cast_possible_truncation)] // LPF2 messages are < 127 bytes in practice
 pub fn encode(msg: &LpfMessage) -> Bytes {
     let inner = encode_inner(msg);
     let total = inner.len() + 2; // +2 for length byte + reserved byte
@@ -337,7 +339,9 @@ fn parse_hub_attached_io(payload: &[u8]) -> Result<LpfMessage> {
                 }),
             )
         }
-        IoEvent::DetachedIo | _ => (None, None),
+        IoEvent::DetachedIo
+        | IoEvent::AttachedIo   // payload too short — treat as detach
+        | IoEvent::AttachedVirtualIo => (None, None), // payload too short — ignore
     };
 
     Ok(LpfMessage::HubAttachedIo(HubAttachedIoMessage {
@@ -409,7 +413,7 @@ fn parse_port_output_command(payload: &[u8]) -> Result<LpfMessage> {
 
 fn parse_port_output_feedback(payload: &[u8]) -> Result<LpfMessage> {
     // Each feedback entry is 2 bytes: port_id + feedback_byte
-    if payload.len() < 2 || payload.len() % 2 != 0 {
+    if payload.len() < 2 || !payload.len().is_multiple_of(2) {
         return Err(Error::Parse(format!(
             "PortOutputCommandFeedback unexpected payload length {}",
             payload.len()

@@ -25,7 +25,7 @@ fn map_speed(speed: i8) -> u8 {
     if speed == 127 {
         return 127;
     }
-    speed.clamp(-100, 100) as u8
+    speed.clamp(-100, 100).cast_unsigned()
 }
 
 // ── Profile flags ────────────────────────────────────────────────────────────

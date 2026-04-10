@@ -50,6 +50,10 @@ impl MockTransport {
 
     /// Queue a frame to be delivered to subscribers of `characteristic`.
     /// Call this before connecting, or between operations, to script hub behaviour.
+    ///
+    /// # Panics
+    /// Panics if the internal lock is poisoned (only possible if another thread
+    /// panicked while holding the lock — does not happen in normal test usage).
     pub fn push_inbound(&self, characteristic: Uuid, data: Bytes) {
         self.inner
             .lock()
@@ -61,6 +65,9 @@ impl MockTransport {
     /// Flush all queued inbound frames to their subscribers.
     ///
     /// Tests call this after `connect()` / `subscribe()` to replay scripted messages.
+    ///
+    /// # Panics
+    /// Panics if the internal lock is poisoned.
     pub async fn flush_inbound(&self) {
         let frames: Vec<(Uuid, Bytes)> = {
             let mut inner = self.inner.lock().expect("mock lock poisoned");
@@ -84,6 +91,9 @@ impl MockTransport {
     }
 
     /// Return a snapshot of all bytes written via `write()`.
+    ///
+    /// # Panics
+    /// Panics if the internal lock is poisoned.
     #[must_use]
     pub fn written(&self) -> Vec<(Uuid, Bytes)> {
         self.inner
@@ -94,6 +104,9 @@ impl MockTransport {
     }
 
     /// Return just the payload bytes written to `characteristic`, in order.
+    ///
+    /// # Panics
+    /// Panics if the internal lock is poisoned.
     #[must_use]
     pub fn written_to(&self, characteristic: &Uuid) -> Vec<Bytes> {
         self.inner
