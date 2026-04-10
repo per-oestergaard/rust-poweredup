@@ -170,8 +170,7 @@ mod tests {
     use super::*;
 
     fn lpf2_all() -> Uuid {
-        Uuid::parse_str(crate::protocol::consts::ble_uuid::LPF2_ALL)
-            .expect("valid UUID constant")
+        Uuid::parse_str(crate::protocol::consts::ble_uuid::LPF2_ALL).expect("valid UUID constant")
     }
 
     #[tokio::test]
@@ -191,7 +190,9 @@ mod tests {
     #[tokio::test]
     async fn write_before_connect_is_error() {
         let t = MockTransport::new();
-        let result = t.write(lpf2_all(), Bytes::from_static(&[0x05, 0x00, 0x01])).await;
+        let result = t
+            .write(lpf2_all(), Bytes::from_static(&[0x05, 0x00, 0x01]))
+            .await;
         assert!(result.is_err());
     }
 
@@ -224,4 +225,3 @@ mod tests {
         assert_eq!(received, frame);
     }
 }
-

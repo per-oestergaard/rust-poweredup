@@ -57,6 +57,71 @@ enum_try_from! {
     }
 }
 
+enum_try_from! {
+    /// Manufacturer data byte (index 3 in the BLE advertisement payload) used to
+    /// distinguish LPF2 hub models from each other.
+    ///
+    /// `WeDo 2.0` Smart Hubs advertise a different service UUID and do not include
+    /// this byte — they are identified by service UUID alone.
+    pub enum BleManufacturerId : u8 {
+        DuploTrainBase   = 32,
+        MoveHub          = 64,
+        Hub              = 65,
+        RemoteControl    = 66,
+        Mario            = 67,
+        Luigi            = 68,
+        Peach            = 69,
+        TechnicMediumHub = 128,
+        TechnicSmallHub  = 131,
+    }
+}
+
+impl HubType {
+    /// Determine the hub type from BLE advertisement data.
+    ///
+    /// `service_uuids` should contain the 128-bit service UUIDs (with or without
+    /// dashes) advertised by the peripheral.  `manufacturer_data` is the raw
+    /// manufacturer-specific advertisement bytes; byte at index 3 carries the
+    /// [`BleManufacturerId`] discriminant for LPF2 hubs.
+    ///
+    /// Returns `None` when the advertisement does not match any known hub.
+    #[must_use]
+    pub fn from_advertisement(service_uuids: &[&str], manufacturer_data: &[u8]) -> Option<Self> {
+        let has_service = |uuid: &str| {
+            let plain = uuid.replace('-', "");
+            service_uuids.iter().any(|s| {
+                let s = s.replace('-', "");
+                s.eq_ignore_ascii_case(&plain)
+            })
+        };
+
+        // WeDo 2.0 is identified by its own service UUID (no manufacturer-data byte)
+        if has_service(ble_uuid::WEDO2_SERVICE) {
+            return Some(Self::WeDo2SmartHub);
+        }
+
+        // All other supported hubs use the LPF2_HUB service UUID
+        if !has_service(ble_uuid::LPF2_SERVICE) {
+            return None;
+        }
+
+        // Manufacturer data byte at index 3 identifies the specific model
+        let id_byte = *manufacturer_data.get(3)?;
+        match BleManufacturerId::try_from(id_byte) {
+            Ok(BleManufacturerId::MoveHub) => Some(Self::MoveHub),
+            Ok(BleManufacturerId::Hub) => Some(Self::Hub),
+            Ok(BleManufacturerId::RemoteControl) => Some(Self::RemoteControl),
+            Ok(BleManufacturerId::DuploTrainBase) => Some(Self::DuploTrainBase),
+            Ok(BleManufacturerId::TechnicMediumHub) => Some(Self::TechnicMediumHub),
+            Ok(BleManufacturerId::TechnicSmallHub) => Some(Self::TechnicSmallHub),
+            Ok(BleManufacturerId::Mario) => Some(Self::Mario),
+            Ok(BleManufacturerId::Luigi) => Some(Self::Luigi),
+            Ok(BleManufacturerId::Peach) => Some(Self::Peach),
+            Err(_) => None,
+        }
+    }
+}
+
 // ── Device types ─────────────────────────────────────────────────────────────
 
 enum_try_from! {
@@ -188,8 +253,11 @@ pub mod ble_uuid {
     // WeDo 2.0 characteristics
     pub const WEDO2_BUTTON: &str = "00001526-1212-efde-1523-785feabcd123";
     pub const WEDO2_PORT_TYPE: &str = "00001527-1212-efde-1523-785feabcd123";
+    pub const WEDO2_DISCONNECT: &str = "0000152b-1212-efde-1523-785feabcd123";
     pub const WEDO2_SENSOR_VALUE: &str = "00001560-1212-efde-1523-785feabcd123";
+    pub const WEDO2_PORT_TYPE_WRITE: &str = "00001563-1212-efde-1523-785feabcd123";
     pub const WEDO2_MOTOR_WRITE: &str = "00001565-1212-efde-1523-785feabcd123";
+    pub const WEDO2_NAME_ID: &str = "00001524-1212-efde-1523-785feabcd123";
 }
 
 // ── Message types ─────────────────────────────────────────────────────────────

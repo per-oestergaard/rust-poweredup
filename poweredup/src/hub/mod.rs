@@ -7,6 +7,11 @@
 //!
 //! RAII: `Drop` on `Hub<Connected>` and `Hub<Ready>` sends a `HUB_ACTION`
 //! Disconnect message so the physical hub knows the host has gone away.
+//!
+//! Typed constructors are available on `Hub<Disconnected, T>` for each supported
+//! hub model — e.g. [`Hub::move_hub`], [`Hub::technic_medium_hub`].
+
+pub mod port_maps;
 
 use std::collections::{HashMap, HashSet};
 
@@ -64,6 +69,23 @@ pub struct Hub<S, T: BleTransport> {
     state: S,
 }
 
+// ── State-independent accessors ───────────────────────────────────────────────
+
+impl<S, T: BleTransport> Hub<S, T> {
+    /// Hub model type — available in all connection states.
+    #[must_use]
+    pub fn hub_type(&self) -> HubType {
+        self.hub_type
+    }
+
+    /// Resolve a port name (e.g. `"A"`) to its numeric port ID.
+    /// Available in all connection states.
+    #[must_use]
+    pub fn port_id(&self, name: &str) -> Option<u8> {
+        self.port_map.get(name).copied()
+    }
+}
+
 /// Properties populated during hub initialization.
 #[derive(Debug, Clone, Default)]
 pub struct HubProperties {
@@ -93,6 +115,48 @@ impl<T: BleTransport> Hub<Disconnected, T> {
             props: HubProperties::default(),
             state: Disconnected,
         }
+    }
+
+    /// Convenience constructor for a **LEGO Powered UP Hub** (2-port hub, #88009).
+    #[must_use]
+    pub fn powered_up_hub(transport: T) -> Self {
+        Self::new(transport, HubType::Hub, port_maps::powered_up_hub())
+    }
+
+    /// Convenience constructor for a **LEGO BOOST Move Hub** (#17101).
+    #[must_use]
+    pub fn move_hub(transport: T) -> Self {
+        Self::new(transport, HubType::MoveHub, port_maps::move_hub())
+    }
+
+    /// Convenience constructor for a **LEGO Technic Medium Hub** (Control+, #88012).
+    #[must_use]
+    pub fn technic_medium_hub(transport: T) -> Self {
+        Self::new(transport, HubType::TechnicMediumHub, port_maps::technic_medium_hub())
+    }
+
+    /// Convenience constructor for a **LEGO Technic Small Hub** (Spike Essential, #45345).
+    #[must_use]
+    pub fn technic_small_hub(transport: T) -> Self {
+        Self::new(transport, HubType::TechnicSmallHub, port_maps::technic_small_hub())
+    }
+
+    /// Convenience constructor for a **LEGO Powered UP Remote Control** (#88010).
+    #[must_use]
+    pub fn remote_control(transport: T) -> Self {
+        Self::new(transport, HubType::RemoteControl, port_maps::remote_control())
+    }
+
+    /// Convenience constructor for a **LEGO DUPLO Train Base** (#10874).
+    #[must_use]
+    pub fn duplo_train_base(transport: T) -> Self {
+        Self::new(transport, HubType::DuploTrainBase, port_maps::duplo_train_base())
+    }
+
+    /// Convenience constructor for a **LEGO `WeDo 2.0` Smart Hub** (#45300).
+    #[must_use]
+    pub fn wedo2_smart_hub(transport: T) -> Self {
+        Self::new(transport, HubType::WeDo2SmartHub, port_maps::wedo2_smart_hub())
     }
 
     /// Opens the BLE connection and subscribes to the `LPF2_ALL` characteristic.
@@ -262,12 +326,6 @@ impl<T: BleTransport> Hub<Connected, T> {
 // ── Ready state ───────────────────────────────────────────────────────────────
 
 impl<T: BleTransport> Hub<Ready, T> {
-    /// Hub type detected from BLE advertisement.
-    #[must_use]
-    pub fn hub_type(&self) -> HubType {
-        self.hub_type
-    }
-
     /// Snapshot of hub properties collected during `initialize()`.
     #[must_use]
     pub fn properties(&self) -> &HubProperties {
@@ -278,12 +336,6 @@ impl<T: BleTransport> Hub<Ready, T> {
     #[must_use]
     pub fn devices(&self) -> &HashMap<u8, Box<dyn Device>> {
         &self.state.devices
-    }
-
-    /// Resolve a port name (e.g. `"A"`) to its numeric port ID.
-    #[must_use]
-    pub fn port_id(&self, name: &str) -> Option<u8> {
-        self.port_map.get(name).copied()
     }
 
     /// Poll for the next message from the hub, updating internal state.
@@ -343,7 +395,7 @@ impl<T: BleTransport> Hub<Ready, T> {
                     dev.set_mode(m.mode);
                 }
             }
-                LpfMessage::PortValueSingle(v) => {
+            LpfMessage::PortValueSingle(v) => {
                 if let Some(dev) = self.state.devices.get_mut(&v.port_id) {
                     match dev.receive(&v.data) {
                         Ok(
@@ -580,5 +632,63 @@ mod tests {
         // (port_map is accessible transitively via the struct fields, but we
         //  haven't exposed it publicly — use port_id() only on Ready hubs)
         // Just verify the type compiles with the right structure.
+    }
+
+    #[test]
+    fn typed_constructors_set_hub_type_and_ports() {
+        let cases: &[(&str, HubType, &str, u8)] = &[
+            ("Hub_A", HubType::Hub, "A", 0),
+            ("Hub_led", HubType::Hub, "HUB_LED", 50),
+            ("MoveHub_C", HubType::MoveHub, "C", 2),
+            ("MoveHub_tilt", HubType::MoveHub, "TILT_SENSOR", 58),
+            ("TMH_accel", HubType::TechnicMediumHub, "ACCELEROMETER", 97),
+            ("TSH_led", HubType::TechnicSmallHub, "HUB_LED", 49),
+            ("RC_left", HubType::RemoteControl, "LEFT", 0),
+            ("Duplo_color", HubType::DuploTrainBase, "COLOR", 18),
+            ("WeDo_led", HubType::WeDo2SmartHub, "HUB_LED", 6),
+        ];
+
+        for (label, hub_type, port_name, expected_id) in cases {
+            let (actual_type, actual_port_map) = match hub_type {
+                HubType::Hub => {
+                    let h = Hub::powered_up_hub(MockTransport::new());
+                    (h.hub_type, h.port_map)
+                }
+                HubType::MoveHub => {
+                    let h = Hub::move_hub(MockTransport::new());
+                    (h.hub_type, h.port_map)
+                }
+                HubType::TechnicMediumHub => {
+                    let h = Hub::technic_medium_hub(MockTransport::new());
+                    (h.hub_type, h.port_map)
+                }
+                HubType::TechnicSmallHub => {
+                    let h = Hub::technic_small_hub(MockTransport::new());
+                    (h.hub_type, h.port_map)
+                }
+                HubType::RemoteControl => {
+                    let h = Hub::remote_control(MockTransport::new());
+                    (h.hub_type, h.port_map)
+                }
+                HubType::DuploTrainBase => {
+                    let h = Hub::duplo_train_base(MockTransport::new());
+                    (h.hub_type, h.port_map)
+                }
+                HubType::WeDo2SmartHub => {
+                    let h = Hub::wedo2_smart_hub(MockTransport::new());
+                    (h.hub_type, h.port_map)
+                }
+                HubType::Unknown
+                | HubType::Mario
+                | HubType::Luigi
+                | HubType::Peach => unreachable!("not tested here"),
+            };
+            assert_eq!(actual_type, *hub_type, "{label}: hub_type mismatch");
+            assert_eq!(
+                actual_port_map.get(*port_name).copied(),
+                Some(*expected_id),
+                "{label}: port {port_name} should be {expected_id}"
+            );
+        }
     }
 }
